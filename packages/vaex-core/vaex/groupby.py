@@ -7,6 +7,7 @@ import six
 import numpy as np
 import pyarrow as pa
 from vaex.dataframe import DataFrame
+from vaex.docstrings import docsubst
 
 from vaex.delayed import delayed_args, delayed_dict, delayed_list
 from vaex.utils import _ensure_list, _ensure_string_from_expression
@@ -953,6 +954,45 @@ class GroupBy(GroupByBase):
         else:
             self.df.execute()
             return result.get()
+
+    @docsubst
+    def describe(self, expression):
+        '''Return a dataframe with summary statistics per group for each of the expressions provided.
+
+        Example:
+
+        >>> import vaex
+        >>> df = vaex.datasets.titanic()
+        >>> df.groupby('pclass').describe('age')
+        #    pclass    age_count    age_count_na    age_mean    age_std    age_min    age_max
+        0         1          284              39     39.1599    14.5224     0.9167         80
+        1         2          261              16     29.5067    13.6125     0.6667         70
+        2         3          501             208     24.8164    11.9463     0.1667         74
+
+        :param expression: {expression}
+        :rtype: DataFrame
+        '''
+        columns = vaex.utils._ensure_strings_from_expressions(expression)
+        columns = vaex.utils._ensure_list(columns)
+        assert len(columns) > 0, 'Please specify at least one column.'
+
+        def _create_agg(col):
+            if self.df.data_type(col) != 'string':
+                return {f'{col}_count': vaex.agg.count(col),
+                        f'{col}_count_na': vaex.agg.count() - vaex.agg.count(col),
+                        f'{col}_mean': vaex.agg.mean(col),
+                        f'{col}_std': vaex.agg.std(col),
+                        f'{col}_min': vaex.agg.min(col),
+                        f'{col}_max': vaex.agg.max(col)}
+            else:
+                return {f'{col}_count': vaex.agg.count(col),
+                        f'{col}_count_na': vaex.agg.count() - vaex.agg.count(col)}
+
+        aggs = {}
+        for col in columns:
+            aggs.update(_create_agg(col))
+
+        return self.agg(aggs)
 
 
 @vaex.dataset.register
