@@ -748,3 +748,6 @@ def test_describe_agg():
                                       'sex_count_na']
     assert res.age_count_na.tolist() == [39, 16, 208]
     assert res.age_max.tolist() == [80, 70, 74]
+
+    # make it work without args
+    res = df.groupby().describe(['age', df.sex])

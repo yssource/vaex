@@ -28,7 +28,7 @@ _EXPERIMENTAL_BINNER_HASH = False
 
 
 # pure Python to avoid int overflow
-product = lambda l: reduce(operator.mul, l)
+product = lambda l: reduce(operator.mul, l, 1)
 
 
 class BinnerBase:
@@ -606,7 +606,9 @@ class GroupByBase(object):
         self.progressbar = vaex.utils.progressbars(progress)
         self.progressbar_groupers = self.progressbar.add("groupers")
 
-        if not isinstance(by, collections_abc.Iterable)\
+        if by is None:
+            by = []
+        elif not isinstance(by, collections_abc.Iterable)\
             or isinstance(by, six.string_types):
             by = [by]
 
